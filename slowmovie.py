@@ -135,11 +135,13 @@ def update(epd, config):
 
     # Open grab.jpg in PIL
     pil_im = Image.open(tmpFramePath)
-
-    brightness_enhancer = ImageEnhance.Contrast(pil_img)
-    brightness_enhancer.enhance(config['brightness'])
-    contrast_enhancer = ImageEnhance.Contrast(pil_img)
-    contrast_enhancer.enhance(config['contrast'])
+    
+    if config['brightness'] is not None:
+        brightness_enhancer = ImageEnhance.Brightness(pil_img)
+        brightness_enhancer.enhance(config['brightness'])
+    if config['contrast'] is not None:
+        contrast_enhancer = ImageEnhance.Contrast(pil_img)
+        contrast_enhancer.enhance(config['contrast'])
 
     # Dither the image into a 1 bit bitmap (Just zeros and ones)
     pil_im = pil_im.convert(mode='1',dither=Image.FLOYDSTEINBERG)
@@ -193,8 +195,8 @@ def read_config():
     config = {
         'frameDelay': 120,
         'increment': 4,
-        'brightness': 1,
-        'contrast': 1,
+        'brightness': None,
+        'contrast': None,
     }
     with open(CONFIG_PATH, 'r') as f:
         config.update(json.load(f))
