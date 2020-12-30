@@ -23,8 +23,9 @@ import logging.handlers
 
 logger = logging.getLogger('vsmp')
 logger.setLevel(logging.INFO)
-logger.setFormatter('[vsmp] %(message)s')
-logger.addHandler(logging.handlers.SysLogHandler(address = '/dev/log'))
+handler = logging.handlers.SysLogHandler(address = '/dev/log')
+handler.setFormatter('[vsmp] %(message)s')
+logger.addHandler(handler)
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 VIDEO_DIR = os.path.join(BASE_DIR, 'videos')
