@@ -12,8 +12,8 @@
 
 from PIL import Image, ImageEnhance
 import ffmpeg
-import json
 import os, time, sys, random
+import configparser
 
 # Ensure this is the correct import for your particular screen
 from waveshare_epd import epd7in5_V2
@@ -30,7 +30,7 @@ logger.addHandler(handler)
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 VIDEO_DIR = os.path.join(BASE_DIR, 'videos')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-CONFIG_PATH = os.path.join(BASE_DIR, 'config.json')
+CONFIG_PATH = os.path.join(BASE_DIR, 'vsmp.conf')
 
 # Ensure this matches your particular screen
 DISPLAY_WIDTH = 800
@@ -56,13 +56,7 @@ def main():
 def progress_file_path(name):
     return os.path.join(LOGS_DIR, '%s<progress' % name)
 
-def update(epd, config):
-    frameDelay = float(config['frameDelay'])
-    logger.info('Frame Delay = %f', frameDelay)
-
-    increment = float(config['increment'])
-    logger.info('Increment = %f', increment)
-
+def update(epd, globalConfig):
     # Scan through video folder until you find an .mp4 file
     currentVideo = ''
     videoTry = 0
@@ -106,14 +100,16 @@ def update(epd, config):
                 log.write('0')
                 log.close()
     logger.debug(movieList)
-
-    if 'file' in config:
-        if config['file'] in movieList:
-            currentVideo = config['file']
-        else:
-            logger.error('%s not found', config['file'])
+    if 'currentVideo' in globalConfig:
+        config = globalConfig[currentVideo]
+    else:
+        config = globalConfig['DEFAULT']
 
     logger.info('The current video is %s', currentVideo)
+    frameDelay = float(config.get('frameDelay', 120))
+    logger.info('Frame Delay = %f', frameDelay)
+    increment = float(config.get('increment', 4))
+    logger.info('Increment = %f', increment)
 
     currentPosition = 0
 
@@ -138,12 +134,13 @@ def update(epd, config):
     # Open grab.jpg in PIL
     pil_im = Image.open(tmpFramePath)
     
-    if config['brightness'] is not None:
-        brightness_enhancer = ImageEnhance.Brightness(pil_im)
-        brightness_enhancer.enhance(config['brightness'])
-    if config['contrast'] is not None:
-        contrast_enhancer = ImageEnhance.Contrast(pil_im)
-        contrast_enhancer.enhance(config['contrast'])
+    brightness = float(config.get('brightness', 1))
+    brightness_enhancer = ImageEnhance.Brightness(pil_im)
+    brightness_enhancer.enhance(brightness)
+
+    contrast = float(config.get('contrast', 1))
+    contrast_enhancer = ImageEnhance.Contrast(pil_im)
+    contrast_enhancer.enhance(contrast)
 
     # Dither the image into a 1 bit bitmap (Just zeros and ones)
     pil_im = pil_im.convert(mode='1',dither=Image.FLOYDSTEINBERG)
@@ -195,14 +192,8 @@ def check_mp4(value):
     return value
 
 def read_config():
-    config = {
-        'frameDelay': 120,
-        'increment': 4,
-        'brightness': None,
-        'contrast': None,
-    }
-    with open(CONFIG_PATH, 'r') as f:
-        config.update(json.load(f))
+    config = configparser.ConfigParser()
+    config.read(CONFIG_PATH)
     return config
 
 if __name__ == '__main__':
