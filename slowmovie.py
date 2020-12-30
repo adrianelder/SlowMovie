@@ -21,10 +21,10 @@ from waveshare_epd import epd7in5_V2
 import logging
 import logging.handlers
 
-logging.basicConfig(format='[vsmp] %(message)s')
 logger = logging.getLogger('vsmp')
 logger.setLevel(logging.INFO)
 handler = logging.handlers.SysLogHandler(address = '/dev/log')
+handler.setFormatter(logging.Formatter('[vsmp] %(message)s'))
 logger.addHandler(handler)
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
