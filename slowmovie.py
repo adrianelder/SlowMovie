@@ -137,10 +137,10 @@ def update(epd, config):
     pil_im = Image.open(tmpFramePath)
     
     if config['brightness'] is not None:
-        brightness_enhancer = ImageEnhance.Brightness(pil_img)
+        brightness_enhancer = ImageEnhance.Brightness(pil_im)
         brightness_enhancer.enhance(config['brightness'])
     if config['contrast'] is not None:
-        contrast_enhancer = ImageEnhance.Contrast(pil_img)
+        contrast_enhancer = ImageEnhance.Contrast(pil_im)
         contrast_enhancer.enhance(config['contrast'])
 
     # Dither the image into a 1 bit bitmap (Just zeros and ones)
