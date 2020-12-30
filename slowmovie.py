@@ -18,6 +18,14 @@ import os, time, sys, random
 # Ensure this is the correct import for your particular screen
 from waveshare_epd import epd7in5_V2
 
+import logging
+import logging.handlers
+
+logger = logging.getLogger('vsmp')
+logger.setLevel(logging.INFO)
+logger.setFormatter('[vsmp] %(message)s')
+logger.addHandler(logging.handlers.SysLogHandler(address = '/dev/log'))
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 VIDEO_DIR = os.path.join(BASE_DIR, 'videos')
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
@@ -49,10 +57,10 @@ def progress_file_path(name):
 
 def update(epd, config):
     frameDelay = float(config['frameDelay'])
-    print('Frame Delay = %f' %frameDelay )
+    logger.info('Frame Delay = %f', frameDelay)
 
     increment = float(config['increment'])
-    print('Increment = %f' %increment )
+    logger.info('Increment = %f', increment)
 
     # Scan through video folder until you find an .mp4 file
     currentVideo = ''
@@ -78,20 +86,14 @@ def update(epd, config):
         if file == currentVideo:
             videoExists = 1
 
-    if videoExists > 0:
-        print('The current video is %s' %currentVideo)
-    elif videoExists == 0:
-        print('error')
+    if videoExists == 0:
         currentVideo = os.listdir(VIDEO_DIR)[0]
         f = open('nowPlaying', 'w')
         f.write(currentVideo)
         f.close()
-        print('The current video is %s' %currentVideo)
 
     movieList = []
-
     # log files store the current progress for all the videos available
-
     for file in os.listdir(VIDEO_DIR):
         if not file.startswith('.'):
             movieList.append(file)
@@ -102,16 +104,15 @@ def update(epd, config):
                 log = open(progress_file_path(file), 'w')
                 log.write('0')
                 log.close()
-
-    print (movieList)
+    logger.debug(movieList)
 
     if 'file' in config:
         if config['file'] in movieList:
             currentVideo = config['file']
         else:
-            print ('%s not found' % config['file'])
+            logger.error('%s not found', config['file'])
 
-    print('The current video is %s' %currentVideo)
+    logger.info('The current video is %s', currentVideo)
 
     currentPosition = 0
 
@@ -124,14 +125,14 @@ def update(epd, config):
 
     # Check how many frames are in the movie
     frameCount = int(ffmpeg.probe(inputVid)['streams'][0]['nb_frames'])
-    print('there are %d frames in this video' %frameCount)
 
     frame = currentPosition
     msTimecode = '%dms'%(frame*41.666666)
     # Use ffmpeg to extract a frame from the movie, crop it, letterbox it,
     # and save it as grab.jpg
     tmpFramePath = os.path.join(BASE_DIR, 'grab.jpg')
-    generate_frame(inputVid, tmpFramePath, msTimecode, DISPLAY_WIDTH, DISPLAY_HEIGHT)
+    generate_frame(
+        inputVid, tmpFramePath, msTimecode, DISPLAY_WIDTH, DISPLAY_HEIGHT)
 
     # Open grab.jpg in PIL
     pil_im = Image.open(tmpFramePath)
@@ -148,7 +149,8 @@ def update(epd, config):
 
     # display the image
     epd.display(epd.getbuffer(pil_im))
-    print('Displaying frame %d of %s' %(frame,currentVideo))
+    logger.info('Displaying frame %d of %d in %s', 
+                frame, frameCount, currentVideo)
 
     currentPosition = currentPosition + increment
     if currentPosition >= frameCount:
