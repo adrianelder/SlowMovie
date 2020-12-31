@@ -100,7 +100,7 @@ def update(epd, globalConfig):
                 log.write('0')
                 log.close()
     logger.debug(movieList)
-    if 'currentVideo' in globalConfig:
+    if currentVideo in globalConfig:
         config = globalConfig[currentVideo]
     else:
         config = globalConfig['DEFAULT']
@@ -136,11 +136,11 @@ def update(epd, globalConfig):
     
     brightness = float(config.get('brightness', 1))
     brightness_enhancer = ImageEnhance.Brightness(pil_im)
-    brightness_enhancer.enhance(brightness)
+    pil_im = brightness_enhancer.enhance(brightness)
 
     contrast = float(config.get('contrast', 1))
     contrast_enhancer = ImageEnhance.Contrast(pil_im)
-    contrast_enhancer.enhance(contrast)
+    pil_im = contrast_enhancer.enhance(contrast)
 
     # Dither the image into a 1 bit bitmap (Just zeros and ones)
     pil_im = pil_im.convert(mode='1',dither=Image.FLOYDSTEINBERG)
