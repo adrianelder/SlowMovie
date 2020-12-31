@@ -57,13 +57,27 @@ def progress_file_path(name):
     return os.path.join(LOGS_DIR, '%s<progress' % name)
 
 def update(epd, globalConfig):
-    # Scan through video folder until you find an .mp4 file
-    currentVideo = ''
-    videoTry = 0
-    while not (currentVideo.endswith('.mp4')):
-        currentVideo = os.listdir(VIDEO_DIR)[videoTry]
-        videoTry = videoTry + 1
+    rawPlaylist = globalConfig['DEFAULT'].get('playlist', '').strip().split()
+    playlist = []
+    # log files store the current progress for all the videos available
+    for file in rawPlaylist:
+        if not os.path.exists(os.path.join(VIDEO_DIR, file)):
+            logger.warning('File does not exist: %s', file)
+            continue
+        playlist.append(file)
+        try:
+            log = open(progress_file_path(file))
+            log.close()
+        except:
+            log = open(progress_file_path(file), 'w')
+            log.write('0')
+            log.close()
+    logger.debug(playlist)
 
+    if not playlist:
+        logger.error('No playlist defined')
+        exit(1)
+        
     # the nowPlaying file stores the current video file
     # if it exists and has a valid video, switch to that
     try:
@@ -72,34 +86,11 @@ def update(epd, globalConfig):
             currentVideo = line.strip()
         f.close()
     except:
+        currentVideo = playlist[0]
         f = open('nowPlaying', 'w')
         f.write(currentVideo)
         f.close()
 
-    videoExists = 0
-    for file in os.listdir(VIDEO_DIR):
-        if file == currentVideo:
-            videoExists = 1
-
-    if videoExists == 0:
-        currentVideo = os.listdir(VIDEO_DIR)[0]
-        f = open('nowPlaying', 'w')
-        f.write(currentVideo)
-        f.close()
-
-    movieList = []
-    # log files store the current progress for all the videos available
-    for file in os.listdir(VIDEO_DIR):
-        if not file.startswith('.'):
-            movieList.append(file)
-            try:
-                log = open(progress_file_path(file))
-                log.close()
-            except:
-                log = open(progress_file_path(file), 'w')
-                log.write('0')
-                log.close()
-    logger.debug(movieList)
     if currentVideo in globalConfig:
         config = globalConfig[currentVideo]
     else:
@@ -157,11 +148,11 @@ def update(epd, globalConfig):
         log.write(str(currentPosition))
         log.close()
 
-        thisVideo = movieList.index(currentVideo)
-        if thisVideo < len(movieList)-1:
-            currentVideo = movieList[thisVideo+1]
+        thisVideo = playlist.index(currentVideo)
+        if thisVideo < len(playlist)-1:
+            currentVideo = playlist[thisVideo+1]
         else:
-            currentVideo = movieList[0]
+            currentVideo = playlist[0]
 
     log = open(progress_file_path(currentVideo), 'w')
     log.write(str(currentPosition))
