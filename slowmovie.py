@@ -109,13 +109,23 @@ def update(epd, globalConfig):
     for line in log:
         currentPosition = float(line)
 
+
     inputVid = os.path.join(VIDEO_DIR, currentVideo)
 
     # Check how many frames are in the movie
     frameCount = int(ffmpeg.probe(inputVid)['streams'][0]['nb_frames'])
+    
+    # Start frame is effectively the minimum frame index
+    startFrame = int(config.get('startFrame', 0))
+    if currentPosition >= startFrame:
+        frame = currentPosition
+    else:
+        frame = startFrame
 
-    frame = currentPosition
-    msTimecode = '%dms'%(frame*41.666666)
+    # Convert from frame index to ms timecode assuming 24000/1001 fps.
+    # TODO: Read this from video stream 'r_frame_rate' value.
+    msPerFrame = 1000 / (24000 / 1001)
+    msTimecode = '%dms' % (frame * msPerFrame)
     # Use ffmpeg to extract a frame from the movie, crop it, letterbox it,
     # and save it as grab.jpg
     tmpFramePath = os.path.join(BASE_DIR, 'grab.jpg')
