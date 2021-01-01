@@ -112,7 +112,7 @@ def update(epd, globalConfig):
     # Start frame is effectively the minimum frame index
     startFrame = int(config.get('startFrame', 0))
     if currentPosition < startFrame:
-        currenPosition = startFrame
+        currentPosition = startFrame
     
     inputVid = os.path.join(VIDEO_DIR, currentVideo)
 
